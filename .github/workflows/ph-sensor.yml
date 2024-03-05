@@ -25,7 +25,7 @@ jobs:
     - name: Merge with main (manual run)
       run: |
         git checkout main
-        git merge $GITHUB_REF_NAME
+        git merge origin/$GITHUB_REF_NAME
       if: github.event_name != 'pull_request'
     - name: Merge with main (pull request)
       run: |
