@@ -25,12 +25,12 @@ jobs:
     - name: Merge with main (manual run)
       run: |
         git checkout main
-        git merge origin/${{ GITHUB_REF_NAME }}
+        git merge $GITHUB_REF_NAME
       if: github.event_name != 'pull_request'
     - name: Merge with main (pull request)
       run: |
         git checkout main
-        git merge $GITHUB_HEAD_REF
+        git merge origin/$GITHUB_HEAD_REF
       if: github.event_name == 'pull_request'
     - name: Build
       working-directory: ph-sensor
