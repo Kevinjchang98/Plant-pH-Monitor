@@ -16,6 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Merge with main
+      run: 
+        git checkout main
+        git merge $GITHUB_REF_NAME
     - name: Build
       working-directory: ph-sensor
       run: cargo build --verbose
