@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - run: |
+       git config --global user.email "name@example.com"
+       git config --global user.name "Name"
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
