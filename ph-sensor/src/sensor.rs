@@ -47,10 +47,10 @@ pub fn sensor_loop(
 }
 
 fn _get_sensor_reading() -> Reading {
-    return Reading {
+    Reading {
         timestamp: SystemTime::now(),
         value: 7.0,
-    };
+    }
 }
 
 #[cfg(test)]

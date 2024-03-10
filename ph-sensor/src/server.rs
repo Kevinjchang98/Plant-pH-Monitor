@@ -43,9 +43,9 @@ pub fn handle_connections(
                 if stop_signal.load(Ordering::Relaxed) {
                     drop(listener);
                     break;
-                } else {
-                    std::thread::sleep(tick_duration)
                 }
+
+                std::thread::sleep(tick_duration)
             }
             Err(e) => {
                 panic!("Encountered unexpected server error: {}", e)
