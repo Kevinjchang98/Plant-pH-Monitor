@@ -32,7 +32,6 @@ fn main() {
     ctrlc::set_handler(move || {
         println!("\nCtrl-C received, stopping threads");
         stop_signal_clone.store(true, Ordering::Relaxed);
-        return;
     })
     .expect("Error setting Ctrl-C handler");
 
