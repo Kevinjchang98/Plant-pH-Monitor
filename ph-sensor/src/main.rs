@@ -17,6 +17,14 @@ struct Reading {
     value: f32,
 }
 
+/// Awaits for a request of a new sensor reading and returns a single Reading instance back. Will
+/// exit when stop_signal is set to true
+///
+/// # Arguments
+///
+/// * `rx_reading_request`: Channel for listening for a sensor reading request on
+/// * `tx_ph_value`: Channel to send an updated Reading instance through
+/// * `stop_signal`: Set to true if it should stop listening for connections
 fn sensor_loop(
     rx_reading_request: &Receiver<bool>,
     tx_ph_value: &Sender<Reading>,
@@ -51,6 +59,14 @@ fn _get_sensor_reading() -> Reading {
     };
 }
 
+/// Listens for incoming TCP connections and spawns a new thread for each to handle. Non blocking
+/// and will exit when the stop_signal is true
+///
+/// # Arguments
+///
+/// * `tx_reading_request`: Channel for sending a request for a new Reading
+/// * `rx_ph_value`: Channel for Reading response
+/// * `stop_signal`: Set to true if it should stop listening for connections
 fn handle_connections(
     tx_reading_request: &Sender<bool>,
     rx_ph_value: &Receiver<Reading>,
@@ -91,6 +107,13 @@ fn handle_connections(
     println!("Exiting server thread");
 }
 
+/// Handles a single TCP connection
+///
+/// # Arguments
+///
+/// * `stream`: Single TcpStream to handle
+/// * `tx_reading_request`: Channel to send a sensor reading request through
+/// * `rx_ph_value`: Channel to receive an updated sensor Reading from
 fn handle_client(
     mut stream: TcpStream,
     tx_reading_request: &Sender<bool>,
