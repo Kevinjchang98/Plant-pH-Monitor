@@ -191,8 +191,8 @@ mod tests {
 
     #[test]
     fn sensor_loop_stops_on_stop_signal() {
-        let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-        let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
+        let (_, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+        let (tx_ph_value, _): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
@@ -229,8 +229,8 @@ mod tests {
 
     #[test]
     fn handle_connections_stops_on_stop_signal() {
-        let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-        let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
+        let (tx_reading_request, _): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+        let (_, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
