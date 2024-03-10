@@ -183,11 +183,12 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, mpsc};
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::mpsc::{Receiver, Sender};
+    use std::sync::{mpsc, Arc};
     use std::time::Duration;
-    use crate::{handle_connections, Reading, sensor_loop};
+
+    use crate::{handle_connections, sensor_loop, Reading};
 
     #[test]
     fn sensor_loop_stops_on_stop_signal() {
@@ -196,7 +197,9 @@ mod tests {
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
-        let sensor_loop_thread = std::thread::spawn(move || sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone));
+        let sensor_loop_thread = std::thread::spawn(move || {
+            sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
+        });
 
         println!("Sending stop signal");
         stop_signal.store(true, Ordering::Relaxed);
@@ -209,22 +212,26 @@ mod tests {
 
     #[test]
     fn sensor_loop_requests_reading_on_channel_request() {
-        let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+        let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) =
+            mpsc::channel();
         let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
-        std::thread::spawn(move || sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone));
+        std::thread::spawn(move || {
+            sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
+        });
 
         println!("Sending request");
-        tx_reading_request.send(true).expect("Error sending tx_reading_request");
+        tx_reading_request
+            .send(true)
+            .expect("Error sending tx_reading_request");
 
         println!("Expecting a result");
         rx_ph_value.recv().unwrap();
 
         println!("Sending stop signal");
         stop_signal.store(true, Ordering::Relaxed);
-
     }
 
     #[test]
@@ -234,7 +241,9 @@ mod tests {
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
-        let handle_connections_thread = std::thread::spawn(move || handle_connections(&tx_reading_request, &rx_ph_value, stop_signal_clone));
+        let handle_connections_thread = std::thread::spawn(move || {
+            handle_connections(&tx_reading_request, &rx_ph_value, stop_signal_clone)
+        });
 
         println!("Sending stop signal");
         stop_signal.store(true, Ordering::Relaxed);
