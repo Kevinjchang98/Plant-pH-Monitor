@@ -130,7 +130,7 @@ fn handle_client(
     println!("Request: {:#?}", http_request);
 
     // Request an updated reading from pH sensor thread
-    tx_reading_request.send(true);
+    tx_reading_request.send(true).unwrap();
 
     // Format to JSON
     let reading = rx_ph_value.recv().unwrap();
@@ -172,8 +172,8 @@ fn main() {
     loop {
         if stop_signal.load(Ordering::Relaxed) {
             // Wait for child threads to join
-            sensor_thread.join();
-            server_thread.join();
+            sensor_thread.join().unwrap();
+            server_thread.join().unwrap();
 
             println!("Exiting main thread");
             break;
