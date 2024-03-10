@@ -65,6 +65,7 @@ fn handle_connections(
     listener
         .set_nonblocking(true)
         .expect("Unable to set listener as non-blocking");
+
     for stream in listener.incoming() {
         match stream {
             Ok(s) => {
@@ -86,6 +87,7 @@ fn handle_connections(
             }
         }
     }
+
     println!("Exiting server thread");
 }
 
