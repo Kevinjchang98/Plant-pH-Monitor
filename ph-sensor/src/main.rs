@@ -59,7 +59,7 @@ fn _get_sensor_reading() -> Reading {
     };
 }
 
-/// Listens for incoming TCP connections and spawns a new thread for each to handle. Non blocking
+/// Listens for incoming TCP connections and spawns a new thread for each to handle. Non-blocking
 /// and will exit when the stop_signal is true
 ///
 /// # Arguments
@@ -142,7 +142,7 @@ fn handle_client(
 }
 
 fn main() {
-    // Channels for passing datas between socket and pH sensor threads
+    // Channels for passing data between socket and pH sensor threads
     let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
     let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
 
