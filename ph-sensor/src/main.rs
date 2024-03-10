@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc};
@@ -10,8 +9,9 @@ use std::{
 };
 
 use ctrlc;
-use threadpool::ThreadPool;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 struct Reading {
     timestamp: SystemTime,
     value: f32,
@@ -34,7 +34,7 @@ fn sensor_loop(
         }
 
         match rx_reading_request.try_recv() {
-            Ok(reading_request) => {
+            Ok(_) => {
                 tx_ph_value.send(_get_sensor_reading()).unwrap();
             }
             _ => {
@@ -47,11 +47,15 @@ fn sensor_loop(
 fn _get_sensor_reading() -> Reading {
     return Reading {
         timestamp: SystemTime::now(),
-        value: 0.0,
+        value: 7.0,
     };
 }
 
-fn handle_connections(stop_signal: Arc<AtomicBool>) {
+fn handle_connections(
+    tx_reading_request: &Sender<bool>,
+    rx_ph_value: &Receiver<Reading>,
+    stop_signal: Arc<AtomicBool>,
+) {
     println!("Server thread started");
 
     // Check for new incoming connections each second
@@ -61,20 +65,17 @@ fn handle_connections(stop_signal: Arc<AtomicBool>) {
     listener
         .set_nonblocking(true)
         .expect("Unable to set listener as non-blocking");
-    let pool = ThreadPool::new(4);
-
     for stream in listener.incoming() {
         match stream {
             Ok(s) => {
                 println!("Connection established");
 
-                pool.execute(|| {
-                    handle_client(s);
-                })
+                handle_client(s, &tx_reading_request, &rx_ph_value);
             }
             Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // Check stop_signal and stop listening if true
                 if stop_signal.load(Ordering::Relaxed) {
+                    drop(listener);
                     break;
                 } else {
                     std::thread::sleep(tick_duration)
@@ -88,7 +89,11 @@ fn handle_connections(stop_signal: Arc<AtomicBool>) {
     println!("Exiting server thread");
 }
 
-fn handle_client(mut stream: TcpStream) {
+fn handle_client(
+    mut stream: TcpStream,
+    tx_reading_request: &Sender<bool>,
+    rx_ph_value: &Receiver<Reading>,
+) {
     let buf_reader = BufReader::new(&mut stream);
 
     let http_request: Vec<_> = buf_reader
@@ -99,8 +104,15 @@ fn handle_client(mut stream: TcpStream) {
 
     println!("Request: {:#?}", http_request);
 
-    let res = "HTTP/1.1 200 OK\r\n\r\n";
+    // Request an updated reading from pH sensor thread
+    tx_reading_request.send(true);
 
+    // Format to JSON
+    let reading = rx_ph_value.recv().unwrap();
+    let reading_json = serde_json::to_string(&reading).unwrap();
+
+    // Send response back and close connection
+    let res = "HTTP/1.1 200 OK\r\n\r\n".to_owned() + &*reading_json;
     stream.write_all(res.as_bytes()).unwrap();
 }
 
@@ -119,7 +131,9 @@ fn main() {
         sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
     });
     let stop_signal_clone = Arc::clone(&stop_signal);
-    let server_thread = std::thread::spawn(move || handle_connections(stop_signal_clone));
+    let server_thread = std::thread::spawn(move || {
+        handle_connections(&tx_reading_request, &rx_ph_value, stop_signal_clone)
+    });
 
     // Handle Ctrl-C inputs
     let stop_signal_clone = Arc::clone(&stop_signal);
