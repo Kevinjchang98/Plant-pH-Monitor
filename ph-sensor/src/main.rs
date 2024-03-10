@@ -147,7 +147,6 @@ fn main() {
     let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
 
     // Channel for interrupting detached threads
-    let (tx_stop, rx_stop): (Sender<bool>, Receiver<bool>) = mpsc::channel();
     let stop_signal = Arc::new(AtomicBool::new(false));
 
     // Spawn threads
