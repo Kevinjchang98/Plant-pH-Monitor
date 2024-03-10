@@ -1,12 +1,16 @@
-use std::sync::{Arc, mpsc};
-use std::sync::mpsc::{Receiver, Sender};
-use std::time::{Duration, SystemTime};
-use std::{io::{prelude::*, BufReader}, io, net::{TcpListener, TcpStream}};
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{mpsc, Arc};
+use std::time::{Duration, SystemTime};
+use std::{
+    io,
+    io::{prelude::*, BufReader},
+    net::{TcpListener, TcpStream},
+};
 
-use threadpool::ThreadPool;
 use ctrlc;
+use threadpool::ThreadPool;
 
 struct Reading {
     timestamp: SystemTime,
@@ -54,7 +58,9 @@ fn handle_connections(stop_signal: Arc<AtomicBool>) {
     let tick_duration = Duration::new(0, 1_000_000_000u32);
 
     let listener = TcpListener::bind("[::]:24000").unwrap();
-    listener.set_nonblocking(true).expect("Unable to set listener as non-blocking");
+    listener
+        .set_nonblocking(true)
+        .expect("Unable to set listener as non-blocking");
     let pool = ThreadPool::new(4);
 
     for stream in listener.incoming() {
@@ -74,7 +80,9 @@ fn handle_connections(stop_signal: Arc<AtomicBool>) {
                     std::thread::sleep(tick_duration)
                 }
             }
-            Err(e) => {panic!("Encountered unexpected server error: {}", e)}
+            Err(e) => {
+                panic!("Encountered unexpected server error: {}", e)
+            }
         }
     }
     println!("Exiting server thread");
@@ -107,8 +115,9 @@ fn main() {
 
     // Spawn threads
     let stop_signal_clone = Arc::clone(&stop_signal);
-    let sensor_thread =
-        std::thread::spawn(move || sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone));
+    let sensor_thread = std::thread::spawn(move || {
+        sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
+    });
     let stop_signal_clone = Arc::clone(&stop_signal);
     let server_thread = std::thread::spawn(move || handle_connections(stop_signal_clone));
 
@@ -117,8 +126,9 @@ fn main() {
     ctrlc::set_handler(move || {
         println!("\nCtrl-C received, stopping threads");
         stop_signal_clone.store(true, Ordering::Relaxed);
-        return
-    }).expect("Error setting Ctrl-C handler");
+        return;
+    })
+    .expect("Error setting Ctrl-C handler");
 
     // Infinite loop unless we get a stop signal
     loop {
