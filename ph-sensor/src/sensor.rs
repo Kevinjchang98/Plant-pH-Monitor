@@ -85,7 +85,7 @@ fn _add_reading_to_reading_log() {
     file.read_to_string(&mut contents)
         .expect("Unable to read log contents");
 
-    let mut old_data = if contents.is_empty() {
+    let mut contents = if contents.is_empty() {
         ReadingLog {
             readings: Vec::new(),
         }
@@ -93,14 +93,10 @@ fn _add_reading_to_reading_log() {
         serde_json::from_str(&contents).expect("Failed to parse old contents")
     };
 
-    // Test add new value
-    old_data.readings.push(Reading {
-        timestamp: SystemTime::now(),
-        value: 6.5,
-    });
+    contents.readings.push(_get_sensor_reading());
 
     let serialized_data =
-        serde_json::to_string_pretty(&old_data).expect("Unable to serialize new data");
+        serde_json::to_string_pretty(&contents).expect("Unable to serialize new data");
 
     file.seek(std::io::SeekFrom::Start(0))
         .expect("Unable to seek to beginning");
