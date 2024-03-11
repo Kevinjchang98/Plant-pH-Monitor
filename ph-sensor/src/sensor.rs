@@ -1,7 +1,9 @@
+use std::fs::OpenOptions;
+use std::io::{Read, Seek, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +11,11 @@ use serde::{Deserialize, Serialize};
 pub struct Reading {
     timestamp: SystemTime,
     value: f32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ReadingLog {
+    readings: Vec<Reading>,
 }
 
 /// Awaits for a request of a new sensor reading and returns a single Reading instance back. Will
@@ -28,6 +35,7 @@ pub fn sensor_loop(
 
     // Check for new requests every second
     let tick_duration = Duration::new(0, 1_000_000_000u32);
+    let mut next_automated_reading_time = SystemTime::now();
 
     loop {
         if stop_signal.load(Ordering::Relaxed) {
@@ -41,9 +49,66 @@ pub fn sensor_loop(
             }
             _ => {
                 std::thread::sleep(tick_duration);
+
+                if next_automated_reading_time < SystemTime::now() {
+                    let current_time = SystemTime::now();
+
+                    // Set next automated reading to be next midnight
+                    let duration_since_epoch = current_time
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Failed to get duration since epoch");
+                    let seconds_since_midnight = duration_since_epoch.as_secs() % (24 * 60 * 60);
+                    let seconds_until_midnight = (24 * 60 * 60) - seconds_since_midnight;
+                    next_automated_reading_time =
+                        current_time + Duration::from_secs(seconds_until_midnight);
+
+                    _add_reading_to_reading_log();
+                }
             }
         }
     }
+}
+
+fn _add_reading_to_reading_log() {
+    println!("Adding reading");
+    let log_path = "../../reading_log";
+
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(log_path)
+        .expect("Unable to open log");
+
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents)
+        .expect("Unable to read log contents");
+
+    let mut old_data = if contents.is_empty() {
+        ReadingLog {
+            readings: Vec::new(),
+        }
+    } else {
+        serde_json::from_str(&contents).expect("Failed to parse old contents")
+    };
+
+    // Test add new value
+    old_data.readings.push(Reading {
+        timestamp: SystemTime::now(),
+        value: 6.5,
+    });
+
+    let serialized_data =
+        serde_json::to_string_pretty(&old_data).expect("Unable to serialize new data");
+
+    file.seek(std::io::SeekFrom::Start(0))
+        .expect("Unable to seek to beginning");
+    file.set_len(0).expect("Unable to truncate file");
+    file.write_all(serialized_data.as_bytes())
+        .expect("Unable to write to file");
+
+    println!("Log updated");
 }
 
 fn _get_sensor_reading() -> Reading {
