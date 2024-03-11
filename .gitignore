@@ -1,2 +1,4 @@
 /ph-sensor/target/
 /ph-sensor/Cargo.lock
+
+.idea

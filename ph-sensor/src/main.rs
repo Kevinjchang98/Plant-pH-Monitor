@@ -1,41 +1,49 @@
-use std::{
-    io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
-};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{mpsc, Arc};
 
-use threadpool::ThreadPool;
+use ctrlc;
+
+use sensor::Reading;
+
+mod sensor;
+mod server;
 
 fn main() {
-    handle_connections();
-}
+    // Channels for passing data between socket and pH sensor threads
+    let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+    let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
 
-fn handle_connections() {
-    let listener = TcpListener::bind("[::]:24000").unwrap();
-    let pool = ThreadPool::new(4);
+    // Channel for interrupting detached threads
+    let stop_signal = Arc::new(AtomicBool::new(false));
 
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
+    // Spawn threads
+    let stop_signal_clone = Arc::clone(&stop_signal);
+    let sensor_thread = std::thread::spawn(move || {
+        sensor::sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
+    });
+    let stop_signal_clone = Arc::clone(&stop_signal);
+    let server_thread = std::thread::spawn(move || {
+        server::handle_connections(&tx_reading_request, &rx_ph_value, stop_signal_clone)
+    });
 
-        println!("Connection established");
+    // Handle Ctrl-C inputs
+    let stop_signal_clone = Arc::clone(&stop_signal);
+    ctrlc::set_handler(move || {
+        println!("\nCtrl-C received, stopping threads");
+        stop_signal_clone.store(true, Ordering::Relaxed);
+    })
+    .expect("Error setting Ctrl-C handler");
 
-        pool.execute(|| {
-            handle_client(stream);
-        })
+    // Infinite loop unless we get a stop signal
+    loop {
+        if stop_signal.load(Ordering::Relaxed) {
+            // Wait for child threads to join
+            sensor_thread.join().unwrap();
+            server_thread.join().unwrap();
+
+            println!("Exiting main thread");
+            break;
+        }
     }
-}
-
-fn handle_client(mut stream: TcpStream) {
-    let buf_reader = BufReader::new(&mut stream);
-
-    let http_request: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
-
-    println!("Request: {:#?}", http_request);
-
-    let res = "HTTP/1.1 200 OK\r\n\r\n";
-
-    stream.write_all(res.as_bytes()).unwrap();
 }
