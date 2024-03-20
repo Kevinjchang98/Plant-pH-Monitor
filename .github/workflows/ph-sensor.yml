@@ -69,6 +69,6 @@ jobs:
       - name: Install cross-rs
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Run tests
-        run: cross +nightly test --target aarch64-unknown-linux-gnu
+        run: cross test --target aarch64-unknown-linux-gnu
       - name: Build
         run: cross build --target aarch64-unknown-linux-gnu
