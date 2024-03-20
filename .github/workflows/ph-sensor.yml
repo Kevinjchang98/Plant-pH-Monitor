@@ -57,4 +57,9 @@ jobs:
         with:
           command: both
           target: aarch64-unknown-linux-gnu
+          args: "--release"
           working-directory: ph-sensor
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ph-sensor/target/aarch64-unknown-linux-gnu
