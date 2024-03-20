@@ -58,6 +58,7 @@ jobs:
           command: both
           target: aarch64-unknown-linux-gnu
           working-directory: ph-sensor
+        if: github.event_name == 'pull_request'
       - name: Build binary (release)
         uses: houseabsolute/actions-rust-cross@v0
         with:
