@@ -1,7 +1,0 @@
-[target.aarch64-unknown-linux-gnu]
-pre-build = [
-    "dpkg --add-architecture arm64",
-    # Needed to deal with tzdata having an interactive prompt causing infinite hang in docker
-    "ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone",
-    "apt-get update",
-]
