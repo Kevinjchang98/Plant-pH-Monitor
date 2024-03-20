@@ -70,3 +70,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ph-sensor/target/aarch64-unknown-linux-gnu/release/ph-sensor
+        if: github.event_name != 'pull_request'
