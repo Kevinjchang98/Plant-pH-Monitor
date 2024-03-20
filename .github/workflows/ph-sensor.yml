@@ -47,7 +47,7 @@ jobs:
   cross_rs_compilation:
     name: "Cross Compilation Test and Build"
 
-    runs-on: "macos-latest"
+    runs-on: "ubuntu-latest"
 
     steps:
       - name: Checkout
