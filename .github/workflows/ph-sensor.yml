@@ -44,8 +44,8 @@ jobs:
         working-directory: ph-sensor
         run: cargo test --verbose
 
-  cross_rs_compilation:
-    name: "Cross Compilation Test and Build"
+  cross_rs_linux_compilation:
+    name: "Linux Cross Compilation Test and Build"
 
     runs-on: "ubuntu-latest"
 
@@ -71,4 +71,34 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: ph-sensor/target/aarch64-unknown-linux-gnu/release/ph-sensor
+        if: github.event_name != 'pull_request'
+
+  cross_rs_windows_compilation:
+    name: "Windows Cross Compilation Test and Build"
+
+    runs-on: "windows-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: x86_64-pc-windows-gnu
+          working-directory: ph-sensor
+        if: github.event_name == 'pull_request'
+      - name: Build binary (release)
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: x86_64-pc-windows-gnu
+          args: "--release"
+          working-directory: ph-sensor
+        if: github.event_name != 'pull_request'
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows_ph_sensor
+          path: ph-sensor/target/x86_64-pc-windows-gnu/release/ph-sensor
         if: github.event_name != 'pull_request'
