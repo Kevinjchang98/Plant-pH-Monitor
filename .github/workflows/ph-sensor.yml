@@ -100,5 +100,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows_ph_sensor
-          path: ph-sensor/target/x86_64-pc-windows-gnu/release/ph-sensor
+          path: ph-sensor/target/x86_64-pc-windows-gnu/
         if: github.event_name != 'pull_request'
