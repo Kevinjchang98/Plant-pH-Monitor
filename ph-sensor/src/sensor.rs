@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -108,9 +108,11 @@ fn _add_reading_to_reading_log() {
 }
 
 fn _get_sensor_reading() -> Reading {
+    let mut rng = rand::thread_rng();
+
     Reading {
         timestamp: SystemTime::now(),
-        value: 7.0,
+        value: rng.gen::<f32>(),
     }
 }
 
