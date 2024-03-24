@@ -112,7 +112,7 @@ fn _get_sensor_reading() -> Reading {
 
     Reading {
         timestamp: SystemTime::now(),
-        value: rng.gen::<f32>(),
+        value: rng.gen::<f32>() * 14.0,
     }
 }
 
