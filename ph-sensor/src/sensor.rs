@@ -76,6 +76,9 @@ fn _add_reading_to_reading_log() {
     let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
     let log_path = app_dirs.data_dir.join("reading_log");
 
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
+
     let mut file = OpenOptions::new()
         .read(true)
         .write(true)
