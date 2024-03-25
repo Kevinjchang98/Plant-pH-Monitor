@@ -5,6 +5,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use platform_dirs::AppDirs;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -72,7 +73,11 @@ pub fn sensor_loop(
 
 fn _add_reading_to_reading_log() {
     println!("Adding reading");
-    let log_path = "../../reading_log";
+    let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
+    let log_path = app_dirs.data_dir.join("reading_log");
+
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
 
     let mut file = OpenOptions::new()
         .read(true)
