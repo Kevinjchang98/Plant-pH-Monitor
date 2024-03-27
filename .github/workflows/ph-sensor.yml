@@ -127,11 +127,15 @@ jobs:
           args: "--release"
           working-directory: ph-sensor
         if: github.event_name != 'pull_request'
+      - name: Set permissions and notarize
+        run: |
+          sudo chmod 777 ph-sensor/target/aarch64-apple-darwin/release/ph-sensor |
+          xattr -d com.apple.quarantine ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos_arm_ph_sensor
-          path: ph-sensor/target/aarch64-apple-darwin/release
+          path: ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
         if: github.event_name != 'pull_request'
 
   cross_rs_macos_x86_64_compilation:
@@ -157,9 +161,13 @@ jobs:
           args: "--release"
           working-directory: ph-sensor
         if: github.event_name != 'pull_request'
+      - name: Set permissions and notarize
+        run: |
+          sudo chmod 777 ph-sensor/target/aarch64-apple-darwin/release/ph-sensor |
+          xattr -d com.apple.quarantine ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos_x86_64_ph_sensor
-          path: ph-sensor/target/x86_64-apple-darwin/release
+          path: ph-sensor/target/x86_64-apple-darwin/release/ph-sensor
         if: github.event_name != 'pull_request'
