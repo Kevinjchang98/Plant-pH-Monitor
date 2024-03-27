@@ -131,7 +131,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos_arm_ph_sensor
-          path: ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
+          path: ph-sensor/target/aarch64-apple-darwin/release
         if: github.event_name != 'pull_request'
 
   cross_rs_macos_x86_64_compilation:
@@ -161,5 +161,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos_x86_64_ph_sensor
-          path: ph-sensor/target/x86_64-apple-darwin/release/ph-sensor
+          path: ph-sensor/target/x86_64-apple-darwin/release
         if: github.event_name != 'pull_request'
