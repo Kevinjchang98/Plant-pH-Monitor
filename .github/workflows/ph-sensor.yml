@@ -127,10 +127,9 @@ jobs:
           args: "--release"
           working-directory: ph-sensor
         if: github.event_name != 'pull_request'
-      - name: Set permissions and notarize
+      - name: Set permissions
         run: |
           sudo chmod 777 ph-sensor/target/aarch64-apple-darwin/release/ph-sensor |
-          xattr -d com.apple.quarantine ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -161,10 +160,9 @@ jobs:
           args: "--release"
           working-directory: ph-sensor
         if: github.event_name != 'pull_request'
-      - name: Set permissions and notarize
+      - name: Set permissions
         run: |
-          sudo chmod 777 ph-sensor/target/aarch64-apple-darwin/release/ph-sensor |
-          xattr -d com.apple.quarantine ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
+          sudo chmod 777 ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
