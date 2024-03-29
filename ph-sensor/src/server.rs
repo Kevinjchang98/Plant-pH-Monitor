@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io;
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
@@ -70,24 +71,47 @@ fn handle_client(
 ) {
     let buf_reader = BufReader::new(&mut stream);
 
-    let http_request: Vec<_> = buf_reader
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
+    // Only get first line of the request
+    let http_request = buf_reader.lines().next().unwrap().unwrap();
 
     println!("Request: {:#?}", http_request);
+    let request_parts = http_request.split(" ").collect::<Vec<&str>>();
 
-    // Request an updated reading from pH sensor thread
-    tx_reading_request.send(true).unwrap();
+    let method = request_parts[0];
+    let uri = request_parts[1];
+    let version = request_parts[2];
 
-    // Format to JSON
-    let reading = rx_ph_value.recv().unwrap();
-    let reading_json = serde_json::to_string(&reading).unwrap();
+    match method {
+        "GET" => {
+            // Request an updated reading from pH sensor thread
+            tx_reading_request.send(true).unwrap();
 
-    // Send response back and close connection
-    let res = "HTTP/1.1 200 OK\r\n\r\n".to_owned() + &*reading_json;
-    stream.write_all(res.as_bytes()).unwrap();
+            // Format to JSON
+            let reading = rx_ph_value.recv().unwrap();
+            let reading_json = serde_json::to_string(&reading).unwrap();
+
+            // Send response back and close connection
+            let res = "HTTP/1.1 200 OK\r\n\r\n".to_owned() + &*reading_json;
+            stream.write_all(res.as_bytes()).unwrap();
+        }
+        "POST" => {
+            let mut uri_parts = uri.split("?");
+            let _route = uri_parts.next().unwrap();
+            let params_str = uri_parts.next().unwrap();
+
+            let params_parts = params_str.split("&");
+            let mut params: HashMap<String, String> = HashMap::new();
+
+            for pair in params_parts {
+                let (key, value) = pair.split_once("=").unwrap();
+                params.insert(key.to_string(), value.to_string());
+            }
+        }
+        &_ => {
+            let res = "HTTP/1.1 404 NOT FOUND\r\n\r\n".to_owned();
+            stream.write_all(res.as_bytes()).unwrap();
+        }
+    }
 }
 
 #[cfg(test)]
