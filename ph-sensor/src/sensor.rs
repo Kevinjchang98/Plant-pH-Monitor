@@ -15,6 +15,10 @@ pub struct Reading {
     value: f32,
 }
 
+pub struct Settings {
+    pub reading_frequency: Duration,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ReadingLog {
     readings: Vec<Reading>,
@@ -31,6 +35,7 @@ pub struct ReadingLog {
 pub fn sensor_loop(
     rx_reading_request: &Receiver<bool>,
     tx_ph_value: &Sender<Reading>,
+    rx_settings: &Receiver<Settings>,
     stop_signal: Arc<AtomicBool>,
 ) {
     println!("Sensor thread started");
@@ -43,6 +48,13 @@ pub fn sensor_loop(
         if stop_signal.load(Ordering::Relaxed) {
             println!("Exiting sensor thread");
             break;
+        }
+
+        match rx_settings.try_recv() {
+            Ok(request) => {
+                dbg!(request.reading_frequency);
+            }
+            _ => {}
         }
 
         match rx_reading_request.try_recv() {
@@ -129,17 +141,23 @@ mod tests {
     use std::sync::{mpsc, Arc};
     use std::time::Duration;
 
-    use crate::sensor::{sensor_loop, Reading};
+    use crate::sensor::{sensor_loop, Reading, Settings};
 
     #[test]
     fn sensor_loop_stops_on_stop_signal() {
         let (_, rx_reading_request): (Sender<bool>, Receiver<bool>) = mpsc::channel();
         let (tx_ph_value, _): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
+        let (_, rx_settings): (Sender<Settings>, Receiver<Settings>) = mpsc::channel();
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
         let sensor_loop_thread = std::thread::spawn(move || {
-            sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
+            sensor_loop(
+                &rx_reading_request,
+                &tx_ph_value,
+                &rx_settings,
+                stop_signal_clone,
+            )
         });
 
         println!("Sending stop signal");
@@ -156,11 +174,17 @@ mod tests {
         let (tx_reading_request, rx_reading_request): (Sender<bool>, Receiver<bool>) =
             mpsc::channel();
         let (tx_ph_value, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
+        let (_, rx_settings): (Sender<Settings>, Receiver<Settings>) = mpsc::channel();
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
         std::thread::spawn(move || {
-            sensor_loop(&rx_reading_request, &tx_ph_value, stop_signal_clone)
+            sensor_loop(
+                &rx_reading_request,
+                &tx_ph_value,
+                &rx_settings,
+                stop_signal_clone,
+            )
         });
 
         println!("Sending request");

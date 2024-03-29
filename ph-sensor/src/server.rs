@@ -7,7 +7,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::sensor::Reading;
+use crate::sensor::{Reading, Settings};
 
 /// Listens for incoming TCP connections and spawns a new thread for each to handle. Non-blocking
 /// and will exit when the stop_signal is true
@@ -20,6 +20,7 @@ use crate::sensor::Reading;
 pub fn handle_connections(
     tx_reading_request: &Sender<bool>,
     rx_ph_value: &Receiver<Reading>,
+    tx_settings: &Sender<Settings>,
     stop_signal: Arc<AtomicBool>,
 ) {
     println!("Server thread started");
@@ -37,7 +38,7 @@ pub fn handle_connections(
             Ok(s) => {
                 println!("Connection established");
 
-                handle_client(s, &tx_reading_request, &rx_ph_value);
+                handle_client(s, &tx_reading_request, &rx_ph_value, &tx_settings);
             }
             Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // Check stop_signal and stop listening if true
@@ -68,6 +69,7 @@ fn handle_client(
     mut stream: TcpStream,
     tx_reading_request: &Sender<bool>,
     rx_ph_value: &Receiver<Reading>,
+    tx_settings: &Sender<Settings>,
 ) {
     let buf_reader = BufReader::new(&mut stream);
 
@@ -79,7 +81,7 @@ fn handle_client(
 
     let method = request_parts[0];
     let uri = request_parts[1];
-    let version = request_parts[2];
+    let _version = request_parts[2];
 
     match method {
         "GET" => {
@@ -99,12 +101,28 @@ fn handle_client(
             let _route = uri_parts.next().unwrap();
             let params_str = uri_parts.next().unwrap();
 
+            // Create hashmap of incoming POST params
             let params_parts = params_str.split("&");
             let mut params: HashMap<String, String> = HashMap::new();
 
             for pair in params_parts {
                 let (key, value) = pair.split_once("=").unwrap();
                 params.insert(key.to_string(), value.to_string());
+            }
+
+            // Send updated Settings with new reading frequency
+            if params.contains_key("reading_frequency") {
+                tx_settings.send(Settings {
+                    reading_frequency: Duration::from_secs(
+                        params["reading_frequency"].parse::<u64>().unwrap(),
+                    ),
+                }).unwrap();
+
+                let res = "HTTP/1.1 200 OK\r\n\r\n".to_owned();
+                stream.write_all(res.as_bytes()).unwrap();
+            } else {
+                let res = "HTTP/1.1 400 BAD REQUEST\r\n\r\n".to_owned();
+                stream.write_all(res.as_bytes()).unwrap();
             }
         }
         &_ => {
@@ -121,18 +139,24 @@ mod tests {
     use std::sync::{mpsc, Arc};
     use std::time::Duration;
 
-    use crate::sensor::Reading;
+    use crate::sensor::{Reading, Settings};
     use crate::server::handle_connections;
 
     #[test]
     fn handle_connections_stops_on_stop_signal() {
         let (tx_reading_request, _): (Sender<bool>, Receiver<bool>) = mpsc::channel();
         let (_, rx_ph_value): (Sender<Reading>, Receiver<Reading>) = mpsc::channel();
+        let (tx_settings, _): (Sender<Settings>, Receiver<Settings>) = mpsc::channel();
         let stop_signal = Arc::new(AtomicBool::new(false));
         let stop_signal_clone = Arc::clone(&stop_signal);
 
         let handle_connections_thread = std::thread::spawn(move || {
-            handle_connections(&tx_reading_request, &rx_ph_value, stop_signal_clone)
+            handle_connections(
+                &tx_reading_request,
+                &rx_ph_value,
+                &tx_settings,
+                stop_signal_clone,
+            )
         });
 
         println!("Sending stop signal");
