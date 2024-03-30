@@ -90,7 +90,7 @@ fn _update_settings(new_setting: &Settings) {
     let settings_path = app_dirs.config_dir.join("settings");
 
     // Create directory if it doesn't exist
-    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
+    std::fs::create_dir_all(&app_dirs.config_dir).unwrap();
 
     let mut file = OpenOptions::new()
         .read(true)
@@ -123,7 +123,7 @@ fn _get_settings() -> Settings {
     let settings_path = app_dirs.config_dir.join("settings");
 
     // Create directory if it doesn't exist
-    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
+    std::fs::create_dir_all(&app_dirs.config_dir).unwrap();
 
     let mut file = OpenOptions::new()
         .read(true)
