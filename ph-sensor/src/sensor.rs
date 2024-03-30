@@ -43,7 +43,7 @@ pub fn sensor_loop(
     stop_signal: Arc<AtomicBool>,
 ) {
     println!("Sensor thread started");
-    let _ = _get_settings();
+    _get_settings();
 
     // Check for new requests every second
     let tick_duration = Duration::new(0, 1_000_000_000u32);
