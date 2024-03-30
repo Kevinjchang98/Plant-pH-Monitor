@@ -79,6 +79,12 @@ pub fn sensor_loop(
     }
 }
 
+/// Updates the settings file. If one doesn't exist it will create one and write the given settings 
+/// to it. Expects a complete Settings struct
+///
+/// # Arguments
+///
+/// * `new_setting`: Settings struct to save as new settings
 fn _update_settings(new_setting: &Settings) {
     let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
     let settings_path = app_dirs.config_dir.join("settings");
@@ -110,6 +116,8 @@ fn _update_settings(new_setting: &Settings) {
     println!("Settings updated");
 }
 
+/// Gets a Settings struct from the settings file. Will create one with default settings and write
+/// to disk if it doesn't exist.
 fn _get_settings() -> Settings {
     let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
     let settings_path = app_dirs.config_dir.join("settings");
@@ -145,6 +153,7 @@ fn _get_settings() -> Settings {
     serde_json::from_str(&settings).expect("Failed to parse old settings")
 }
 
+/// Updates the next time for an automated reading based on the settings
 fn _update_next_automated_reading_time() -> SystemTime {
     let settings = _get_settings();
 
@@ -153,6 +162,7 @@ fn _update_next_automated_reading_time() -> SystemTime {
     current_time + settings.reading_frequency
 }
 
+/// Will add a new reading to the log
 fn _add_reading_to_reading_log() {
     println!("Adding reading");
     let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
@@ -195,6 +205,8 @@ fn _add_reading_to_reading_log() {
     println!("Log updated");
 }
 
+/// Gets the current reading from the sensor
+/// TODO: Complete
 fn _get_sensor_reading() -> Reading {
     let mut rng = rand::thread_rng();
 
