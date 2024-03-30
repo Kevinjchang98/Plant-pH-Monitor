@@ -112,11 +112,13 @@ fn handle_client(
 
             // Send updated Settings with new reading frequency
             if params.contains_key("reading_frequency") {
-                tx_settings.send(Settings {
-                    reading_frequency: Duration::from_secs(
-                        params["reading_frequency"].parse::<u64>().unwrap(),
-                    ),
-                }).unwrap();
+                tx_settings
+                    .send(Settings {
+                        reading_frequency: Duration::from_secs(
+                            params["reading_frequency"].parse::<u64>().unwrap(),
+                        ),
+                    })
+                    .unwrap();
 
                 let res = "HTTP/1.1 200 OK\r\n\r\n".to_owned();
                 stream.write_all(res.as_bytes()).unwrap();

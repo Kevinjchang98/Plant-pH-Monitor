@@ -23,11 +23,21 @@ fn main() {
     // Spawn threads
     let stop_signal_clone = Arc::clone(&stop_signal);
     let sensor_thread = std::thread::spawn(move || {
-        sensor::sensor_loop(&rx_reading_request, &tx_ph_value, &rx_settings, stop_signal_clone)
+        sensor::sensor_loop(
+            &rx_reading_request,
+            &tx_ph_value,
+            &rx_settings,
+            stop_signal_clone,
+        )
     });
     let stop_signal_clone = Arc::clone(&stop_signal);
     let server_thread = std::thread::spawn(move || {
-        server::handle_connections(&tx_reading_request, &rx_ph_value, &tx_settings, stop_signal_clone)
+        server::handle_connections(
+            &tx_reading_request,
+            &rx_ph_value,
+            &tx_settings,
+            stop_signal_clone,
+        )
     });
 
     // Handle Ctrl-C inputs

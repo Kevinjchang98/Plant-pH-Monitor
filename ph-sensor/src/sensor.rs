@@ -43,6 +43,7 @@ pub fn sensor_loop(
     stop_signal: Arc<AtomicBool>,
 ) {
     println!("Sensor thread started");
+    let _ = _get_settings();
 
     // Check for new requests every second
     let tick_duration = Duration::new(0, 1_000_000_000u32);
@@ -97,8 +98,8 @@ fn _update_settings(new_setting: &Settings) {
     file.read_to_string(&mut settings)
         .expect("Unable to read settings file");
 
-    let serialized_data = serde_json::to_string_pretty(&new_setting)
-        .expect("Unable to serialize new settings");
+    let serialized_data =
+        serde_json::to_string_pretty(&new_setting).expect("Unable to serialize new settings");
 
     file.seek(std::io::SeekFrom::Start(0))
         .expect("Unable to seek to beginning of settings file");
@@ -138,7 +139,7 @@ fn _get_settings() -> Settings {
 
         _update_settings(&default_settings);
 
-        return default_settings
+        return default_settings;
     }
 
     serde_json::from_str(&settings).expect("Failed to parse old settings")
