@@ -3,7 +3,7 @@ use std::io::{Read, Seek, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
 use platform_dirs::AppDirs;
 use rand::Rng;
@@ -15,14 +15,18 @@ pub struct Reading {
     value: f32,
 }
 
-pub struct Settings {
-    pub reading_frequency: Duration,
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct ReadingLog {
     readings: Vec<Reading>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Settings {
+    pub reading_frequency: Duration,
+}
+
+trait SettingsField {}
+impl SettingsField for Duration {}
 
 /// Awaits for a request of a new sensor reading and returns a single Reading instance back. Will
 /// exit when stop_signal is set to true
@@ -65,22 +69,87 @@ pub fn sensor_loop(
                 std::thread::sleep(tick_duration);
 
                 if next_automated_reading_time < SystemTime::now() {
-                    let current_time = SystemTime::now();
-
-                    // Set next automated reading to be next midnight
-                    let duration_since_epoch = current_time
-                        .duration_since(UNIX_EPOCH)
-                        .expect("Failed to get duration since epoch");
-                    let seconds_since_midnight = duration_since_epoch.as_secs() % (24 * 60 * 60);
-                    let seconds_until_midnight = (24 * 60 * 60) - seconds_since_midnight;
-                    next_automated_reading_time =
-                        current_time + Duration::from_secs(seconds_until_midnight);
+                    next_automated_reading_time = _update_next_automated_reading_time();
 
                     _add_reading_to_reading_log();
                 }
             }
         }
     }
+}
+
+fn _update_settings(new_setting: &Settings) {
+    let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
+    let settings_path = app_dirs.config_dir.join("settings");
+
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
+
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(settings_path)
+        .expect("Unable to open settings file");
+
+    let mut settings = String::new();
+
+    file.read_to_string(&mut settings)
+        .expect("Unable to read settings file");
+
+    let serialized_data = serde_json::to_string_pretty(&new_setting)
+        .expect("Unable to serialize new settings");
+
+    file.seek(std::io::SeekFrom::Start(0))
+        .expect("Unable to seek to beginning of settings file");
+    file.set_len(0).expect("Unable to truncate settings file");
+    file.write_all(serialized_data.as_bytes())
+        .expect("Unable to write to settings file");
+
+    println!("Settings updated");
+}
+
+fn _get_settings() -> Settings {
+    let app_dirs = AppDirs::new(Some("ph_sensor"), false).unwrap();
+    let settings_path = app_dirs.config_dir.join("settings");
+
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
+
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(settings_path)
+        .expect("Unable to open settings file");
+
+    let mut settings = String::new();
+
+    file.read_to_string(&mut settings)
+        .expect("Unable to read settings file");
+
+    // If there were no old settings create default settings and write to file
+    if settings.is_empty() {
+        println!("No previous settings found, creating default");
+        let default_settings = Settings {
+            // Init with hourly readings
+            reading_frequency: Duration::new(3600, 0),
+        };
+
+        _update_settings(&default_settings);
+
+        return default_settings
+    }
+
+    serde_json::from_str(&settings).expect("Failed to parse old settings")
+}
+
+fn _update_next_automated_reading_time() -> SystemTime {
+    let settings = _get_settings();
+
+    let current_time = SystemTime::now();
+
+    current_time + settings.reading_frequency
 }
 
 fn _add_reading_to_reading_log() {
