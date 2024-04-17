@@ -79,7 +79,7 @@ pub fn sensor_loop(
     }
 }
 
-/// Updates the settings file. If one doesn't exist it will create one and write the given settings 
+/// Updates the settings file. If one doesn't exist it will create one and write the given settings
 /// to it. Expects a complete Settings struct
 ///
 /// # Arguments
@@ -90,7 +90,7 @@ fn _update_settings(new_setting: &Settings) {
     let settings_path = app_dirs.config_dir.join("settings");
 
     // Create directory if it doesn't exist
-    std::fs::create_dir_all(&app_dirs.config_dir).unwrap();
+    std::fs::create_dir_all(&app_dirs.config_dir).expect("Unable to create config directory");
 
     let mut file = OpenOptions::new()
         .read(true)
@@ -123,7 +123,7 @@ fn _get_settings() -> Settings {
     let settings_path = app_dirs.config_dir.join("settings");
 
     // Create directory if it doesn't exist
-    std::fs::create_dir_all(&app_dirs.config_dir).unwrap();
+    std::fs::create_dir_all(&app_dirs.config_dir).expect("Unable to create app directory");
 
     let mut file = OpenOptions::new()
         .read(true)
@@ -169,7 +169,7 @@ fn _add_reading_to_reading_log() {
     let log_path = app_dirs.data_dir.join("reading_log");
 
     // Create directory if it doesn't exist
-    std::fs::create_dir_all(&app_dirs.data_dir).unwrap();
+    std::fs::create_dir_all(&app_dirs.data_dir).expect("Unable to create data directory");
 
     let mut file = OpenOptions::new()
         .read(true)
