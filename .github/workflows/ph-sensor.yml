@@ -70,6 +70,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
+          name: linux_ph_sensor
           path: ph-sensor/target/aarch64-unknown-linux-gnu/release/ph-sensor
         if: github.event_name != 'pull_request'
 
@@ -101,4 +102,64 @@ jobs:
         with:
           name: windows_ph_sensor
           path: ph-sensor/target/x86_64-pc-windows-gnu/release/ph-sensor.exe
+        if: github.event_name != 'pull_request'
+
+  cross_rs_macos_arm_compilation:
+    name: "macOS ARM Cross Compilation Test and Build"
+
+    runs-on: "macOS-14"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: aarch64-apple-darwin
+          working-directory: ph-sensor
+        if: github.event_name == 'pull_request'
+      - name: Build binary (release)
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: aarch64-apple-darwin
+          args: "--release"
+          working-directory: ph-sensor
+        if: github.event_name != 'pull_request'
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos_arm_ph_sensor
+          path: ph-sensor/target/aarch64-apple-darwin/release/ph-sensor
+        if: github.event_name != 'pull_request'
+
+  cross_rs_macos_x86_64_compilation:
+    name: "macOS x86 Cross Compilation Test and Build"
+
+    runs-on: "macOS-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: x86_64-apple-darwin
+          working-directory: ph-sensor
+        if: github.event_name == 'pull_request'
+      - name: Build binary (release)
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: both
+          target: x86_64-apple-darwin
+          args: "--release"
+          working-directory: ph-sensor
+        if: github.event_name != 'pull_request'
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos_x86_64_ph_sensor
+          path: ph-sensor/target/x86_64-apple-darwin/release/ph-sensor
         if: github.event_name != 'pull_request'
